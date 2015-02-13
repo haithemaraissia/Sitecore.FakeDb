@@ -23,23 +23,25 @@
     {
       var language = Language.Current;
 
-      if (this.DataStorage.GetFakeItem(itemId) == null)
+      if (this.DataStorage.GetFakeItem(itemId) != null)
       {
-        var parentItem = this.DataStorage.GetFakeItem(destination.ID);
-        var fullPath = parentItem.FullPath + "/" + itemName;
-
-        var dbitem = new DbItem(itemName, itemId, templateId) { ParentID = destination.ID, FullPath = fullPath };
-        if (addFirstVersion)
-        {
-          dbitem.VersionsCount.Add(language.Name, 1);
-        }
-
-        // ToDo:[HIGH] move it out of here and consolidate with the processing that happens in the Db
-        this.SetStatistics(dbitem);
-
-        this.DataStorage.FakeItems.Add(itemId, dbitem);
-        this.DataStorage.GetFakeItem(destination.ID).Children.Add(dbitem);
+        return this.DataStorage.GetSitecoreItem(itemId, language);
       }
+
+      var parentItem = this.DataStorage.GetFakeItem(destination.ID);
+      var fullPath = parentItem.FullPath + "/" + itemName;
+
+      var dbitem = new DbItem(itemName, itemId, templateId) { ParentID = destination.ID, FullPath = fullPath };
+      if (addFirstVersion)
+      {
+        dbitem.VersionsCount.Add(language.Name, 1);
+      }
+
+      // ToDo:[HIGH] move it out of here and consolidate with the processing that happens in the Db
+      this.SetStatistics(dbitem);
+
+      this.DataStorage.FakeItems.Add(itemId, dbitem);
+      this.DataStorage.GetFakeItem(destination.ID).Children.Add(dbitem);
 
       return this.DataStorage.GetSitecoreItem(itemId, language);
     }

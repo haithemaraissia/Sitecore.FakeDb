@@ -1,5 +1,6 @@
 ﻿namespace Sitecore.FakeDb.Data.DataProviders
 {
+  using System;
   using System.Collections.Generic;
   using System.Linq;
   using System.Threading;
@@ -11,37 +12,51 @@
   using Sitecore.FakeDb.Data.Engines;
   using Sitecore.Globalization;
   using CallContext = Sitecore.Data.DataProviders.CallContext;
+  using Version = Sitecore.Data.Version;
 
-  public class FakeDataProvider : DataProvider, IRequireDataStorage
+  public class FakeDataProvider : DataProvider, IRequireDataStorage, IDisposable
   {
-    private readonly ThreadLocal<DataStorage> dataStorage;
+    private readonly ThreadLocal<DataStorage> storage;
+
+    private bool disposed;
 
     public FakeDataProvider()
     {
-      this.dataStorage = new ThreadLocal<DataStorage>();
+      this.storage = new ThreadLocal<DataStorage>();
     }
 
     internal FakeDataProvider(DataStorage dataStorage)
       : this()
     {
-      this.dataStorage.Value = dataStorage;
+      this.storage.Value = dataStorage;
     }
 
     public virtual DataStorage DataStorage
     {
-      get { return this.dataStorage.Value; }
+      get
+      {
+        if (!this.disposed && null != this.storage)
+        {
+          return this.storage.Value;
+        }
+
+        return null;
+      }
     }
 
     public virtual void SetDataStorage(DataStorage dataStorage)
     {
-      this.dataStorage.Value = dataStorage;
+      if (!this.disposed && null != this.storage)
+      {
+        this.storage.Value = dataStorage;
+      }
     }
 
     public override IdCollection GetTemplateItemIds(CallContext context)
     {
       if (this.DataStorage == null)
       {
-        return new IdCollection();  
+        return new IdCollection();
       }
 
       var ids = this.DataStorage.FakeTemplates.Select(t => t.Key).ToArray();
@@ -65,23 +80,26 @@
     {
       var list = new List<VersionUri>();
 
-      var item = this.DataStorage.GetFakeItem(itemDefinition.ID);
-      foreach (var field in item.Fields)
+      if (null != this.DataStorage)
       {
-        foreach (var fieldLang in field.Values)
+        var item = this.DataStorage.GetFakeItem(itemDefinition.ID);
+        foreach (var field in item.Fields)
         {
-          var language = fieldLang.Key;
-
-          foreach (var fieldVer in fieldLang.Value)
+          foreach (var fieldLang in field.Values)
           {
-            var version = fieldVer.Key;
+            var language = fieldLang.Key;
 
-            if (list.Any(l => l.Language.Name == language && l.Version.Number == version))
+            foreach (var fieldVer in fieldLang.Value)
             {
-              continue;
-            }
+              var version = fieldVer.Key;
 
-            list.Add(new VersionUri(Language.Parse(language), new Version(version)));
+              if (list.Any(l => l.Language.Name == language && l.Version.Number == version))
+              {
+                continue;
+              }
+
+              list.Add(new VersionUri(Language.Parse(language), new Version(version)));
+            }
           }
         }
       }
@@ -106,7 +124,7 @@
 
       foreach (var ft in this.DataStorage.FakeTemplates.Values)
       {
-        templates.Add(BuildTemplate(ft, templates));
+        templates.Add(this.BuildTemplate(ft, templates));
       }
 
       return templates;
@@ -148,6 +166,32 @@
       var items = Query.SelectItems(query, this.Database);
 
       return items != null ? IDList.Build(items.Select(i => i.ID).ToArray()) : new IDList();
+    }
+
+    public void Dispose()
+    {
+      this.Dispose(true);
+      GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+      if (this.disposed)
+      {
+        return;
+      }
+
+      if (!disposing)
+      {
+        return;
+      }
+
+      if (null != this.storage)
+      {
+        this.storage.Dispose();
+      }
+
+      this.disposed = true;
     }
   }
 }

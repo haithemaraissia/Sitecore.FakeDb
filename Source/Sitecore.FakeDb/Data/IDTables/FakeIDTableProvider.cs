@@ -1,12 +1,20 @@
 ﻿namespace Sitecore.FakeDb.Data.IDTables
 {
+  using System;
   using System.Threading;
   using Sitecore.Data;
   using Sitecore.Data.IDTables;
 
-  public class FakeIDTableProvider : IDTableProvider, IThreadLocalProvider<IDTableProvider>
+  public class FakeIDTableProvider : IDTableProvider, IThreadLocalProvider<IDTableProvider>, IDisposable
   {
     private readonly ThreadLocal<IDTableProvider> localProvider = new ThreadLocal<IDTableProvider>();
+
+    private bool disposed;
+
+    ~FakeIDTableProvider()
+    {
+      this.Dispose(false);
+    }
 
     public virtual ThreadLocal<IDTableProvider> LocalProvider
     {
@@ -42,6 +50,32 @@
     public bool IsLocalProviderSet()
     {
       return this.localProvider.Value != null;
+    }
+
+    public void Dispose()
+    {
+      this.Dispose(true);
+      GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+      if (this.disposed)
+      {
+        return;
+      }
+
+      if (!disposing)
+      {
+        return;
+      }
+
+      if (null != this.localProvider)
+      {
+        this.localProvider.Dispose();
+      }
+
+      this.disposed = true;
     }
   }
 }

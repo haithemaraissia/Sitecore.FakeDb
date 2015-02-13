@@ -15,6 +15,8 @@
 
     private readonly DataStorage dataStorage;
 
+    private bool disposed;
+
     public InitDataEngineCommandsTest()
     {
       this.database = Database.GetDatabase("master");
@@ -75,7 +77,25 @@
 
     public void Dispose()
     {
+      this.Dispose(true);
+      GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+      if (this.disposed)
+      {
+        return;
+      }
+
+      if (!disposing)
+      {
+        return;
+      }
+
       Factory.Reset();
+
+      this.disposed = true;
     }
   }
 }

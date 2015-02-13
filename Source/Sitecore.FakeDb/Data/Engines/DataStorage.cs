@@ -95,9 +95,10 @@ namespace Sitecore.FakeDb.Data.Engines
     public virtual void AddFakeItem(DbItem item)
     {
       // TODO: Consider including into the 'addDbItem' pipeline
-      if (item is IDsDbItem)
+      var dbItem = item as IDsDbItem;
+      if (dbItem != null)
       {
-        CorePipeline.Run("loadDsDbItem", new DsItemLoadingArgs(item as IDsDbItem, this));
+        CorePipeline.Run("loadDsDbItem", new DsItemLoadingArgs(dbItem, this));
       }
 
       CorePipeline.Run("addDbItem", new AddDbItemArgs(item, this));
@@ -105,9 +106,10 @@ namespace Sitecore.FakeDb.Data.Engines
 
     public virtual void AddFakeTemplate(DbTemplate template)
     {
-      if (template is IDsDbItem)
+      var item = template as IDsDbItem;
+      if (item != null)
       {
-        CorePipeline.Run("loadDsDbTemplate", new DsItemLoadingArgs(template as IDsDbItem, this));
+        CorePipeline.Run("loadDsDbTemplate", new DsItemLoadingArgs(item, this));
       }
 
       this.FakeTemplates.Add(template.ID, template);
@@ -198,7 +200,7 @@ namespace Sitecore.FakeDb.Data.Engines
       {
         foreach (var baseId in fakeTemplate.BaseIDs)
         {
-          sequence.AddRange(ExpandTemplatesSequence(baseId));
+          sequence.AddRange(this.ExpandTemplatesSequence(baseId));
         }
       }
 
@@ -213,15 +215,16 @@ namespace Sitecore.FakeDb.Data.Engines
       foreach (var templateField in fakeTemplate.Fields)
       {
         var fieldId = templateField.ID;
-        var value = string.Empty;
 
-        DbField itemField = this.FindItemDbField(fakeItem, templateField);
+        var itemField = this.FindItemDbField(fakeItem, templateField);
 
-        if (itemField != null)
+        if (itemField == null)
         {
-          value = itemField.GetValue(language.Name, version.Number);
-          fields.Add(fieldId, value);
+          continue;
         }
+
+        var value = itemField.GetValue(language.Name, version.Number);
+        fields.Add(fieldId, value);
       }
 
       foreach (KeyValuePair<ID, string> field in fields)
@@ -236,13 +239,7 @@ namespace Sitecore.FakeDb.Data.Engines
       Assert.IsNotNull(templateField, "templateField");
 
       // The item has fields with the IDs matching the fields in the template it directly inherits from
-
-      if (fakeItem.Fields.InnerFields.ContainsKey(templateField.ID))
-      {
-        return fakeItem.Fields[templateField.ID];
-      }
-
-      return fakeItem.Fields.InnerFields.Values.SingleOrDefault(f => string.Equals(f.Name, templateField.Name));
+      return fakeItem.Fields.InnerFields.ContainsKey(templateField.ID) ? fakeItem.Fields[templateField.ID] : fakeItem.Fields.InnerFields.Values.SingleOrDefault(f => string.Equals(f.Name, templateField.Name));
     }
 
     protected void FillDefaultFakeTemplates()

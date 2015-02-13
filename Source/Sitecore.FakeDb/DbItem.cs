@@ -66,9 +66,14 @@ namespace Sitecore.FakeDb
       this.Children.Add(child);
     }
 
-    IEnumerator IEnumerable.GetEnumerator()
+    public IEnumerator GetEnumerator()
     {
       return this.Children.GetEnumerator();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+      return this.GetEnumerator();
     }
   }
 }

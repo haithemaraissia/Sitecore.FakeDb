@@ -1,5 +1,6 @@
 ﻿namespace Sitecore.FakeDb.Data.Engines.DataCommands
 {
+  using System;
   using System.Linq;
   using System.Threading;
   using Sitecore.Data;
@@ -7,16 +8,23 @@
   using Sitecore.Data.Managers;
   using Sitecore.Diagnostics;
 
-  public class CopyItemCommand : Sitecore.Data.Engines.DataCommands.CopyItemCommand, IDataEngineCommand
+  public class CopyItemCommand : Sitecore.Data.Engines.DataCommands.CopyItemCommand, IDataEngineCommand, IDisposable
   {
     private readonly ThreadLocal<DataEngineCommand> innerCommand;
 
     private readonly ThreadLocal<ItemCreator> itemCreator;
 
+    private bool disposed;
+
     public CopyItemCommand()
     {
       this.innerCommand = new ThreadLocal<DataEngineCommand> { Value = DataEngineCommand.NotInitialized };
       this.itemCreator = new ThreadLocal<ItemCreator>();
+    }
+
+    ~CopyItemCommand()
+    {
+      this.Dispose(false);
     }
 
     public virtual void Initialize(DataEngineCommand command)
@@ -30,6 +38,37 @@
       set { this.itemCreator.Value = value; }
     }
 
+    public void Dispose()
+    {
+      this.Dispose(true);
+      GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+      if (this.disposed)
+      {
+        return;
+      }
+
+      if (!disposing)
+      {
+        return;
+      }
+
+      if (null != this.innerCommand)
+      {
+        this.innerCommand.Dispose();
+      }
+
+      if (null != this.itemCreator)
+      {
+        this.itemCreator.Dispose();
+      }
+
+      this.disposed = true;
+    }
+
     protected override Sitecore.Data.Engines.DataCommands.CopyItemCommand CreateInstance()
     {
       return this.innerCommand.Value.CreateInstance<Sitecore.Data.Engines.DataCommands.CopyItemCommand, CopyItemCommand>();
@@ -37,7 +76,7 @@
 
     protected override Item DoExecute()
     {
-      ItemCreator.Create(this.CopyName, this.CopyId, this.Source.TemplateID, this.Database, this.Destination);
+      this.ItemCreator.Create(this.CopyName, this.CopyId, this.Source.TemplateID, this.Database, this.Destination);
 
       var dataStorage = this.innerCommand.Value.DataStorage;
 
@@ -48,12 +87,14 @@
 
       var copy = dataStorage.GetSitecoreItem(this.CopyId, this.Source.Language);
 
-      if (this.Deep)
+      if (!this.Deep)
       {
-        foreach (Item child in this.Source.Children)
-        {
-          ItemManager.CopyItem(child, copy, this.Deep, child.Name, ID.NewID);
-        }
+        return copy;
+      }
+
+      foreach (Item child in this.Source.Children)
+      {
+        ItemManager.CopyItem(child, copy, this.Deep, child.Name, ID.NewID);
       }
 
       return copy;
@@ -66,7 +107,7 @@
 
       foreach (var field in source.Fields)
       {
-        CopyField(field, copy);
+        this.CopyField(field, copy);
       }
     }
 
@@ -92,7 +133,6 @@
           copy.Fields[field.ID].Values.Add(language, versions);
         }
       }
-
     }
   }
 }

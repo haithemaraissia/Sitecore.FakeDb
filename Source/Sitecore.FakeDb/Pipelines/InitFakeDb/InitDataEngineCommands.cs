@@ -8,7 +8,7 @@
     {
       var commands = args.Database.Engines.DataEngine.Commands;
       var innerCommand = new DataEngineCommand(args.DataStorage);
-
+      
       this.InitializeCommand(commands.AddFromTemplatePrototype, innerCommand);
       this.InitializeCommand(commands.AddVersionPrototype, innerCommand);
       this.InitializeCommand(commands.BlobStreamExistsPrototype, innerCommand);

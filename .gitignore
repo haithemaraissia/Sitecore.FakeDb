@@ -158,5 +158,11 @@ $RECYCLE.BIN/
 # License
 license.xml
 
-#DLLs from the Lib/
-Lib/*.dll
+# DLLs from the Lib/
+lib/*.dll
+
+# Deploy
+deploy/
+
+# NuGet App.config
+App.config.transform

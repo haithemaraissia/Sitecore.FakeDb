@@ -163,7 +163,7 @@ namespace Sitecore.FakeDb.Data.Engines
 
       return ItemHelper.CreateInstance(this.database, fakeItem.Name, fakeItem.ID, fakeItem.TemplateID, fakeItem.BranchId, fields, language, itemVersion);
     }
-    
+
     protected FieldList BuildItemFieldList(DbItem fakeItem, ID templateId, Language language, Version version)
     {
       // build a sequence of templates that the item inherits from
@@ -257,6 +257,8 @@ namespace Sitecore.FakeDb.Data.Engines
       this.FakeTemplates.Add(TemplateIDs.MainSection, new DbTemplate("Main Section", TemplateIDs.MainSection));
 
       this.FakeTemplates.Add(TemplateIDs.Template, new DbTemplate(TemplateItemName, TemplateIDs.Template) { new DbField(FieldIDs.BaseTemplate) });
+      this.FakeTemplates.Add(TemplateIDs.TemplateSection, new DbTemplate(TemplateSectionItemName, TemplateIDs.TemplateSection));
+      this.FakeTemplates.Add(TemplateIDs.TemplateField, new DbTemplate(TemplateFieldItemName, TemplateIDs.TemplateField));
       this.FakeTemplates.Add(TemplateIDs.Folder, new DbTemplate(FolderItemName, TemplateIDs.Folder));
     }
 
